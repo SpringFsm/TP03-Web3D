@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Exercice WebXR - Joueur avec A-Frame</title>
+    <title>Exercice 1 et 2</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="player-controller.js"></script>
 </head>
 <script>
   AFRAME.registerComponent('player-controller', {
     schema: {
-        speed: { type: 'number', default: 0.1 },
-        acceleration: { type: 'number', default: 0.005 },
-        deceleration: { type: 'number', default: 0.01 },
+        speed: { type: 'number', default: 0.5 },
+        acceleration: { type: 'number', default: 0.1 },
+        deceleration: { type: 'number', default: 0.1 },
         jumpForce: { type: 'number', default: 0.3 }
     },
 
@@ -84,8 +84,8 @@
         <a-entity light="type: directional; color: #FFF; intensity: 0.5; position: -1 1 2"></a-entity>
 
         <a-assets>
-            <img id="grass-texture" src="public/Poliigon_GrassPatchyGround_4585_BaseColor.jpg">
-            <img id="sky-texture" src="public/Cold Sunset Equirect.png">
+            <img id="grass-texture" src="public/floor.jpg">
+            <img id="sky-texture" src="public/sky.png">
         </a-assets>
 
         <a-plane
