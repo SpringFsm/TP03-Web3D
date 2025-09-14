@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Exercice 3</title>
+  <title>Exercice 4</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 </head>
 <script>
-  // Joueur avec contrôle de mouvement + inertie
+  // Joueur avec inertie et contrôles ZQSD relatifs à la caméra
   AFRAME.registerComponent('player-controller', {
     schema: { 
       speed: { type: 'number', default: 0.1 }, 
       jumpForce: { type: 'number', default: 0.3 },
-      accel: { type: 'number', default: 0.1 },   // accélération
-      friction: { type: 'number', default: 0.85 } // décélération
+      accel: { type: 'number', default: 0.01 },   // accélération progressive
+      friction: { type: 'number', default: 2 }   // décélération progressive
     },
     init: function () {
-      this.velocity = new THREE.Vector3();
-      this.targetVel = new THREE.Vector3();
+      this.velocity = new THREE.Vector3();   // vitesse actuelle
+      this.targetVel = new THREE.Vector3();  // vitesse désirée
       this.keys = {};
       this.isGrounded = true;
       this.gravity = -0.01;
@@ -27,26 +27,35 @@
       const el = this.el;
       const move = new THREE.Vector3();
 
-      // ZQSD
+      // Inputs en ZQSD
       if (this.keys['z']) move.z -= 1;
       if (this.keys['s']) move.z += 1;
-      if (this.keys['q']) move.x -= 1;
-      if (this.keys['d']) move.x += 1;
+      if (this.keys['q']) move.x += 1;
+      if (this.keys['d']) move.x -= 1;
 
       if (move.length() > 0) move.normalize();
 
+      // Orientation caméra
+      const cameraRig = document.querySelector('#camera-rig').object3D;
+      const dir = new THREE.Vector3();
+      cameraRig.getWorldDirection(dir);
+
+      // Forward et Right horizontaux
+      const forward = new THREE.Vector3(dir.x, 0, dir.z).normalize();
+      const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+      // Direction finale
+      const moveDir = new THREE.Vector3();
+      moveDir.addScaledVector(forward, move.z);
+      moveDir.addScaledVector(right, move.x);
+      if (moveDir.length() > 0) moveDir.normalize();
+
       // Vitesse désirée
-      this.targetVel.set(move.x * this.data.speed, this.velocity.y, move.z * this.data.speed);
+      this.targetVel.set(moveDir.x * this.data.speed, this.velocity.y, moveDir.z * this.data.speed);
 
-      // Accélération progressive
-      this.velocity.x += (this.targetVel.x - this.velocity.x) * this.data.accel;
-      this.velocity.z += (this.targetVel.z - this.velocity.z) * this.data.accel;
-
-      // Décélération si aucune touche pressée
-      if (move.length() === 0) {
-        this.velocity.x *= this.data.friction;
-        this.velocity.z *= this.data.friction;
-      }
+      // Interpolation progressive (accélération/décélération)
+      this.velocity.x += (this.targetVel.x - this.velocity.x) * this.data.accel * 60;
+      this.velocity.z += (this.targetVel.z - this.velocity.z) * this.data.accel * 60;
 
       // Saut
       if (this.isGrounded && this.keys[' ']) {
@@ -59,7 +68,7 @@
         this.velocity.y += this.gravity;
       }
 
-      // Application de la vitesse
+      // Appliquer la vitesse
       el.object3D.position.add(this.velocity);
 
       // Détection du sol
@@ -71,14 +80,13 @@
     }
   });
 
-  // Composant rotation du rig avec pivot pour la caméra
+  // Rotation du rig caméra
   AFRAME.registerComponent('rig-rotate', {
     schema: { sensitivity: { type: 'number', default: 0.005 } },
     init: function () {
       this.isDragging = false;
       this.rotationY = 0;
       this.rotationX = 0;
-
       const pivot = this.el.querySelector('#camera-pivot');
 
       window.addEventListener('mousedown', e => { if (e.button === 0) this.isDragging = true; });
@@ -119,7 +127,7 @@
   <!-- Cube joueur -->
   <a-box id="player" position="0 0.5 0" color="#FF5733" player-controller></a-box>
 
-  <!-- Camera rig derrière le joueur -->
+  <!-- Camera rig -->
   <a-entity id="camera-rig" rig-rotate follow="target: #player; offset: 0 1.5 0">
     <a-entity id="camera-pivot" rotation="0 0 0">
       <a-entity camera position="0 0 5"></a-entity>
@@ -127,7 +135,7 @@
   </a-entity>
 </a-scene>
 
-<!-- Composant pour faire suivre le rig au joueur -->
+<!-- Rig suit le joueur -->
 <script>
   AFRAME.registerComponent('follow', {
     schema: { target: { type: 'selector' }, offset: { type: 'vec3', default: {x:0,y:1.5,z:0} } },
